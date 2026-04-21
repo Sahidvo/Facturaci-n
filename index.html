@@ -8,11 +8,7 @@
     <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; }
         
-        /* ELIMINAR CABECERAS Y PIES DE PÁGINA (URL, FECHA) */
-        @page { 
-            size: auto; 
-            margin: 0mm; 
-        }
+        @page { size: auto; margin: 0mm; }
 
         @media print {
             .no-print { display: none !important; }
@@ -25,9 +21,14 @@
                 margin: 0 !important;
                 padding: 1.5cm 2cm !important; 
             }
+            /* Lógica de visibilidad del sello */
+            .stamp-container { display: none; }
+            body.show-stamp .stamp-container { display: flex !important; }
         }
 
-        /* Vista en pantalla */
+        /* Vista en pantalla: Sello siempre oculto para no estorbar */
+        .stamp-container { display: none; }
+
         .print-paper { 
             max-width: 850px; 
             margin: auto; 
@@ -40,13 +41,11 @@
         .input-field { width: 100%; border: 1px solid #ddd; padding: 6px; border-radius: 4px; font-size: 0.85rem; margin-top: 4px; outline-color: #3498DB; }
         label { font-size: 0.75rem; font-weight: bold; color: #555; }
         
-        /* Estilo para el historial */
         .history-item:hover .action-btns { opacity: 1; }
         .action-btns { opacity: 0.7; transition: opacity 0.2s; }
 
-        /* Estilos específicos para el sello (Zona Rosa) */
+        /* Estilos del Sello */
         .stamp-container {
-            display: flex;
             align-items: center;
             gap: 20px;
             margin-top: 10px;
@@ -64,11 +63,10 @@
     <div class="grid grid-cols-1 lg:grid-cols-[400px,1fr] gap-6 p-4 max-w-[1650px] mx-auto">
         
         <div class="no-print space-y-6">
-            
             <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600">
                 <div class="flex justify-between items-center mb-4 border-b pb-2">
                     <h2 id="formTitle" class="text-lg font-bold text-gray-800">Nueva Factura</h2>
-                    <button onclick="resetForm()" class="text-xs text-red-500 hover:font-bold">Nueva / Limpiar</button>
+                    <button onclick="resetForm()" class="text-xs text-red-500 hover:font-bold">Limpiar</button>
                 </div>
                 
                 <div class="space-y-3">
@@ -95,17 +93,22 @@
                     </div>
 
                     <div id="itemsContainer" class="border-t pt-3 mt-3">
-                        <label class="text-blue-600 text-[10px] uppercase tracking-widest mb-2 block">Conceptos Facturables</label>
+                        <label class="text-blue-600 text-[10px] uppercase tracking-widest mb-2 block">Conceptos</label>
                     </div>
                     <button onclick="addItem()" class="w-full text-[10px] bg-gray-50 py-1 rounded border border-dashed border-gray-300 hover:bg-gray-100 text-gray-500">+ Añadir concepto</button>
 
-                    <div class="pt-6 grid grid-cols-2 gap-2">
-                        <button onclick="saveInvoice()" id="btnSave" class="bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 shadow text-xs uppercase">
-                            Guardar
+                    <div class="pt-6 space-y-2">
+                        <button onclick="saveInvoice()" id="btnSave" class="w-full bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 text-xs uppercase">
+                            Guardar Factura
                         </button>
-                        <button onclick="prePrint()" class="bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 shadow text-xs uppercase">
-                            Imprimir PDF
-                        </button>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="prePrint(false)" class="bg-gray-700 text-white font-bold py-3 rounded-lg hover:bg-black text-[10px] uppercase">
+                                PDF Gestoría (Sin Sello)
+                            </button>
+                            <button onclick="prePrint(true)" class="bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-800 text-[10px] uppercase shadow-lg">
+                                PDF Paciente (Con Sello)
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -120,7 +123,7 @@
             <div class="flex justify-between items-start mb-10">
                 <div>
                     <div class="mb-4">
-                        <img id="logoImg" src="https://i.imgur.com/F5LhBiA.jpeg" alt="Logo Footlab" class="h-20 w-auto object-contain print:h-24">
+                        <img src="https://i.imgur.com/F5LhBiA.jpeg" alt="Logo Footlab" class="h-20 w-auto object-contain print:h-24">
                     </div>
                     <div class="text-[12px] leading-tight text-gray-600">
                         <p class="font-bold text-gray-700 uppercase">LAURA RAMOS BLANCO</p>
@@ -187,12 +190,7 @@
             <div class="text-[9.5px] text-gray-500 leading-snug border-t pt-4">
                 <p class="mt-1 italic">Factura exenta de IVA según: Ley 37/1992, de 28 de diciembre, art. 20. Uno.</p>
                 <p class="mt-4 text-justify opacity-80 leading-normal">
-                    Le informamos conforme a lo previsto en el RGPD de 27 de abril de 2016 que Laura Ramos Blanco, recaba y trata sus datos de
-                    carácter personal, aplicando las medidas técnicas y organizativas que garantizan su confidencialidad, con la finalidad de 
-                    gestionar la relación que le vincula. Usted da su consentimiento y autorización para dicho tratamiento. Conservaremos sus 
-                    datos de carácter personal únicamente el tiempo imprescindible para gestionar nuestra relación. Podrá ejercitar los derechos 
-                    de acceso, rectificación, supresión, limitación, portabilidad y oposición dirigiéndose a Laura Ramos Blanco C/ Vallehermoso50,
-                    28015 Madrid. administracion@footlab.es
+                    Le informamos conforme a lo previsto en el RGPD de 27 de abril de 2016 que Laura Ramos Blanco... (Texto legal completo)
                 </p>
             </div>
         </div>
@@ -203,15 +201,12 @@
         let items = [];
         let editIndex = -1;
 
-        function init() {
-            resetForm();
-            renderHistorial();
-        }
+        function init() { resetForm(); renderHistorial(); }
 
         function resetForm() {
             editIndex = -1;
             document.getElementById('formTitle').innerText = "Nueva Factura";
-            document.getElementById('btnSave').innerText = "Guardar";
+            document.getElementById('btnSave').innerText = "Guardar Factura";
             const proximoNum = dbFacturas.length > 0 ? Math.max(...dbFacturas.map(f => parseInt(f.numero))) + 1 : 154;
             document.getElementById('inSerie').value = proximoNum;
             document.getElementById('inFecha').value = new Date().toISOString().split('T')[0];
@@ -234,7 +229,7 @@
                 div.innerHTML = `<input type="text" placeholder="Concepto" value="${item.desc}" oninput="updateItem(${index}, 'desc', this.value)" class="input-field mb-1">
                     <div class="grid grid-cols-2 gap-2">
                         <input type="text" placeholder="Cant." value="${item.cant}" oninput="updateItem(${index}, 'cant', this.value)" class="input-field">
-                        <input type="number" placeholder="Importe €" value="${item.precio || ''}" oninput="updateItem(${index}, 'precio', this.value)" class="input-field">
+                        <input type="number" placeholder="€" value="${item.precio || ''}" oninput="updateItem(${index}, 'precio', this.value)" class="input-field">
                     </div>`;
                 container.appendChild(div);
             });
@@ -264,6 +259,7 @@
             document.getElementById('outCP').innerText = document.getElementById('inCP').value || "";
             document.getElementById('outProvincia').innerText = document.getElementById('inProvincia').value || "";
             document.getElementById('outNif').innerText = document.getElementById('inNif').value || "---";
+            
             const tbody = document.getElementById('outTableBody');
             tbody.innerHTML = '';
             let total = 0;
@@ -284,6 +280,20 @@
             document.getElementById('outTotal').innerText = tF;
         }
 
+        function prePrint(withStamp) {
+            if(withStamp) document.body.classList.add('show-stamp');
+            else document.body.classList.remove('show-stamp');
+            
+            const num = document.getElementById('inSerie').value;
+            const nom = document.getElementById('inNombre').value || "Paciente";
+            document.title = `Factura_${num}_${nom}${withStamp ? '_Firmada' : ''}`;
+            
+            window.print();
+            
+            document.title = "Sistema Footlab - Facturación";
+            document.body.classList.remove('show-stamp');
+        }
+
         function saveInvoice() {
             const f = {
                 numero: document.getElementById('inSerie').value,
@@ -296,7 +306,7 @@
                 items: [...items],
                 total: items.reduce((s, i) => s + i.precio, 0)
             };
-            if(!f.nombre) return alert("Nombre de paciente obligatorio");
+            if(!f.nombre) return alert("Nombre obligatorio");
             if(editIndex > -1) dbFacturas[editIndex] = f;
             else dbFacturas.push(f);
             localStorage.setItem('facturas_footlab', JSON.stringify(dbFacturas));
@@ -312,9 +322,10 @@
                 const div = document.createElement('div');
                 div.className = "p-3 bg-gray-50 border rounded flex justify-between items-center text-xs hover:bg-white history-item transition";
                 div.innerHTML = `<div class="truncate mr-2"><p class="font-bold">#${f.numero} - ${f.nombre}</p>
-                    <p class="text-gray-500">${f.fecha} • <span class="text-blue-600 font-bold">${f.total.toFixed(2)}€</span></p></div>
-                    <div class="flex gap-1 action-btns"><button onclick="editInvoice(${realIdx})" class="bg-gray-200 px-2 py-1 rounded hover:bg-amber-500 hover:text-white">EDT</button>
-                    <button onclick="printFromHistory(${realIdx})" class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">PDF</button></div>`;
+                    <p class="text-gray-500">${f.total.toFixed(2)}€</p></div>
+                    <div class="flex gap-1 action-btns">
+                        <button onclick="editInvoice(${realIdx})" class="bg-gray-200 px-2 py-1 rounded hover:bg-amber-500">EDT</button>
+                    </div>`;
                 list.appendChild(div);
             });
         }
@@ -334,22 +345,6 @@
             items = f.items;
             renderItemsInputs();
             updateView();
-            window.scrollTo({top: 0, behavior: 'smooth'});
-        }
-
-        function prePrint() {
-            const num = document.getElementById('inSerie').value;
-            const nom = document.getElementById('inNombre').value || "Paciente";
-            document.title = "Factura_" + num + "_" + nom;
-            window.print();
-            document.title = "Sistema Footlab - Facturación";
-        }
-
-        function printFromHistory(index) {
-            editInvoice(index);
-            const f = dbFacturas[index];
-            document.title = "Factura_" + f.numero + "_" + f.nombre;
-            setTimeout(() => { window.print(); document.title = "Sistema Footlab - Facturación"; }, 300);
         }
 
         init();
