@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Footlab - Facturación</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; }
+        
+        /* --- ELIMINACIÓN DE CABECERAS Y PIES DE PÁGINA DEL NAVEGADOR --- */
+        @page { 
+            size: auto; 
+            margin: 0mm; /* Al poner margen 0, el navegador no tiene sitio para escribir la URL */
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; padding: 0; margin: 0; }
+            
+            .print-paper { 
+                box-shadow: none !important; 
+                border: none !important; 
+                width: 100% !important; 
+                max-width: 100% !important; 
+                margin: 0 !important;
+                /* Compensamos el margen 0 de la página con padding interno para el contenido */
+                padding: 1.5cm 2cm !important; 
+            }
+        }
+
+        /* Estilo para visualización en pantalla */
+        .print-paper { 
+            max-width: 850px; 
+            margin: auto; 
+            padding: 40px; 
+            background: white; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.1); 
+            min-height: 297mm; 
+        }
+
+        .logo-foot { font-size: 28px; font-weight: 300; color: #2C3E50; }
+        .logo-lab { font-size: 28px; font-weight: bold; color: #2C3E50; margin-left: -2px; }
+        .logo-footprint { font-size: 30px; color: #3498DB; margin-right: 2px; }
+        .input-field { width: 100%; border: 1px solid #ddd; padding: 6px; border-radius: 4px; font-size: 0.85rem; margin-top: 4px; outline-color: #3498DB; }
+        label { font-size: 0.75rem; font-weight: bold; color: #555; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="grid grid-cols-1 lg:grid-cols-[400px,1fr] gap-6 p-4 max-w-[1650px] mx-auto">
+        
+        <div class="no-print space-y-6">
+            
+            <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 id="formTitle" class="text-lg font-bold text-gray-800">Nueva Factura</h2>
+                    <button onclick="resetForm()" class="text-xs text-red-500 hover:font-bold transition-all">Limpiar / Nueva</button>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label>Núm. Factura</label>
+                            <input type="number" id="inSerie" oninput="updateView()" class="input-field bg-gray-50 font-bold text-blue-700">
+                        </div>
+                        <div>
+                            <label>Fecha Factura</label>
+                            <input type="date" id="inFecha" oninput="updateView()" class="input-field">
+                        </div>
+                    </div>
+
+                    <div class="border-t pt-3 mt-3">
+                        <label class="text-blue-600 text-[10px] uppercase tracking-widest mb-2 block">Datos del Paciente</label>
+                        <input type="text" id="inNombre" oninput="updateView()" placeholder="Nombre del Paciente" class="input-field mb-2">
+                        <input type="text" id="inDireccion" oninput="updateView()" placeholder="Dirección (Calle y Nº)" class="input-field mb-2">
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <input type="text" id="inCP" oninput="updateView()" placeholder="Cód. Postal" class="input-field">
+                            <input type="text" id="inProvincia" oninput="updateView()" placeholder="Provincia" class="input-field">
+                        </div>
+                        <input type="text" id="inNif" oninput="updateView()" placeholder="NIF / DNI" class="input-field">
+                    </div>
+
+                    <div id="itemsContainer" class="border-t pt-3 mt-3">
+                        <label class="text-blue-600 text-[10px] uppercase tracking-widest mb-2 block">Servicios</label>
+                        </div>
+                    <button onclick="addItem()" class="w-full text-[10px] bg-gray-50 py-1 rounded border border-dashed border-gray-300 hover:bg-gray-100 text-gray-600">+ Añadir otro concepto</button>
+
+                    <div class="pt-6 grid grid-cols-2 gap-2">
+                        <button onclick="saveInvoice()" id="btnSave" class="bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 shadow shadow-green-100 text-xs uppercase">
+                            Guardar
+                        </button>
+                        <button onclick="prePrint()" class="bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 shadow shadow-blue-100 text-xs uppercase">
+                            Imprimir PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-gray-400">
+                <h2 class="text-lg font-bold mb-4 border-b pb-2 text-gray-700">Historial de Facturas</h2>
+                <div id="historialList" class="space-y-2 max-h-[450px] overflow-y-auto pr-2 text-sm">
+                    </div>
+            </div>
+        </div>
+
+        <div class="print-paper" id="factura">
+            <div class="flex justify-between items-start mb-10">
+                <div>
+                    <div class="flex items-center mb-2">
+                        <span class="logo-footprint">👣</span><span class="logo-foot">foot</span><span class="logo-lab">lab</span>
+                    </div>
+                    <div class="text-[12px] leading-tight text-gray-600">
+                        <p class="font-bold text-gray-700 uppercase">LAURA RAMOS BLANCO</p>
+                        <p>C/ Vallehermoso Nº50</p>
+                        <p>28015 Madrid, Madrid</p>
+                        <p>NIF (CIF): ES32687465A</p>
+                        <p class="text-blue-500 font-medium">lramos@footlab.es</p>
+                    </div>
+                </div>
+                <div class="bg-gray-50 p-4 min-w-[240px] text-[12px] border border-gray-100">
+                    <div class="grid grid-cols-[1fr,auto] gap-x-4 gap-y-1">
+                        <span class="text-gray-600">Núm. de factura</span>
+                        <span id="outSerie" class="text-right font-bold text-gray-900">---</span>
+                        <span class="text-gray-600">Fecha</span>
+                        <span id="outFecha" class="text-right">--/--/----</span>
+                        <span class="text-gray-600">Fecha de operación</span>
+                        <span id="outFechaOp" class="text-right">--/--/----</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-12 text-[12px] leading-relaxed text-gray-700">
+                <p class="font-bold uppercase mb-1 text-sm text-gray-800" id="outNombre">NOMBRE DEL PACIENTE</p>
+                <p id="outDireccion">---</p>
+                <p><span id="outCP">---</span> <span id="outProvincia">---</span></p>
+                <p class="mt-1">NIF (CIF): <span id="outNif" class="font-medium">---</span></p>
+            </div>
+
+            <table class="w-full text-[12px] mb-8">
+                <thead>
+                    <tr class="border-b border-gray-300 text-gray-800">
+                        <th class="text-left py-2 w-1/2 uppercase text-[10px] tracking-wider">Producto o servicio</th>
+                        <th class="text-center py-2 uppercase text-[10px] tracking-wider">Cantidad</th>
+                        <th class="text-right py-2 uppercase text-[10px] tracking-wider">Precio unitario</th>
+                        <th class="text-right py-2 uppercase text-[10px] tracking-wider">Importe</th>
+                    </tr>
+                </thead>
+                <tbody id="outTableBody"></tbody>
+            </table>
+
+            <div class="flex justify-end mb-16">
+                <div class="w-[220px] text-[12px] space-y-1">
+                    <div class="flex justify-between px-1">
+                        <span class="font-bold">Subtotal</span><span id="outSubtotal">0,00 EUR</span>
+                    </div>
+                    <div class="flex justify-between px-1 text-gray-500">
+                        <span class="font-bold">IVA Exento</span><span>0,00 EUR</span>
+                    </div>
+                    <div class="flex justify-between text-sm border-t border-gray-800 pt-2 mt-2 px-1">
+                        <span class="font-bold uppercase tracking-tighter">Importe total</span><span id="outTotal" class="font-bold text-gray-900">0,00 EUR</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-[9.5px] text-gray-500 leading-snug border-t pt-6">
+                <p class="font-bold text-gray-700 mb-1 uppercase">Nota legal</p>
+                <p>DRA. LAURA RAMOS BLANCO - NO. COL. 1880</p>
+                <p class="mt-1 italic">Factura exenta de IVA según: Ley 37/1992, de 28 de diciembre, art. 20. Uno.</p>
+                <p class="mt-4 text-justify opacity-80 leading-normal">
+                   Le informamos conforme a lo previsto en el RGPD de 27 de abril de 2016 que Laura Ramos Blanco, recaba y trata sus datos
+                   de carácter personal, aplicando las medidas técnicas y organizativas que garantizan su confidencialidad, con la finalidad de
+                   gestionar la relación que le vincula. Usted da su consentimiento y autorización para dicho tratamiento. Conservaremos sus
+                   datos de carácter personal únicamente el tiempo imprescindible para gestionar nuestra relación. Podrá ejercitar los derechos
+                   de acceso, rectificación, supresión, limitación, portabilidad y oposición dirigiéndose a Laura Ramos Blanco C/ Vallehermoso50,
+                 28015 Madrid. administracion@footlab.es
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Memoria y Estado
+        let dbFacturas = JSON.parse(localStorage.getItem('facturas_footlab')) || [];
+        let items = [];
+        let editIndex = -1;
+
+        function init() {
+            resetForm();
+            renderHistorial();
+        }
+
+        function resetForm() {
+            editIndex = -1;
+            document.getElementById('formTitle').innerText = "Nueva Factura";
+            document.getElementById('btnSave').innerText = "Guardar";
+            
+            // Lógica correlativa: Busca el máximo número guardado y suma 1
+            const proximoNum = dbFacturas.length > 0 ? Math.max(...dbFacturas.map(f => parseInt(f.numero))) + 1 : 154;
+            
+            document.getElementById('inSerie').value = proximoNum;
+            document.getElementById('inFecha').value = new Date().toISOString().split('T')[0];
+            document.getElementById('inNombre').value = "";
+            document.getElementById('inDireccion').value = "";
+            document.getElementById('inCP').value = "";
+            document.getElementById('inProvincia').value = "";
+            document.getElementById('inNif').value = "";
+            
+            items = [
+                { desc: 'Quiropodia', cant: '1 unidad', precio: 35 },
+                { desc: '', cant: '', precio: 0 },
+                { desc: '', cant: '', precio: 0 }
+            ];
+            
+            renderItemsInputs();
+            updateView();
+        }
+
+        function renderItemsInputs() {
+            const container = document.getElementById('itemsContainer');
+            container.innerHTML = '';
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-gray-50 p-2 rounded mb-2 border border-gray-100";
+                div.innerHTML = `
+                    <input type="text" placeholder="Concepto" value="${item.desc}" oninput="updateItem(${index}, 'desc', this.value)" class="input-field mb-1">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="Cant." value="${item.cant}" oninput="updateItem(${index}, 'cant', this.value)" class="input-field">
+                        <input type="number" placeholder="Importe €" value="${item.precio || ''}" oninput="updateItem(${index}, 'precio', this.value)" class="input-field">
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateItem(index, field, value) {
+            items[index][field] = field === 'precio' ? parseFloat(value) || 0 : value;
+            updateView();
+        }
+
+        function addItem() {
+            items.push({ desc: '', cant: '', precio: 0 });
+            renderItemsInputs();
+            updateView();
+        }
+
+        function updateView() {
+            const num = document.getElementById('inSerie').value;
+            const fecha = document.getElementById('inFecha').value;
+            const parts = fecha.split('-');
+            const fDisplay = fecha ? `${parts[2]}/${parts[1]}/${parts[0]}` : '--/--/----';
+
+            document.getElementById('outSerie').innerText = num;
+            document.getElementById('outFecha').innerText = fDisplay;
+            document.getElementById('outFechaOp').innerText = fDisplay;
+            document.getElementById('outNombre').innerText = document.getElementById('inNombre').value || "NOMBRE DEL PACIENTE";
+            document.getElementById('outDireccion').innerText = document.getElementById('inDireccion').value || "---";
+            document.getElementById('outCP').innerText = document.getElementById('inCP').value || "";
+            document.getElementById('outProvincia').innerText = document.getElementById('inProvincia').value || "";
+            document.getElementById('outNif').innerText = document.getElementById('inNif').value || "---";
+
+            const tbody = document.getElementById('outTableBody');
+            tbody.innerHTML = '';
+            let total = 0;
+
+            items.forEach(item => {
+                if(item.desc || item.precio > 0) {
+                    total += item.precio;
+                    const pF = item.precio.toFixed(2).replace('.',',');
+                    tbody.innerHTML += `
+                        <tr class="border-b border-gray-100">
+                            <td class="py-2 text-gray-700">${item.desc}</td>
+                            <td class="text-center py-2 text-gray-700">${item.cant}</td>
+                            <td class="text-right py-2 text-gray-700 font-mono">${pF} EUR</td>
+                            <td class="text-right py-2 font-bold text-gray-800 font-mono">${pF} EUR</td>
+                        </tr>`;
+                }
+            });
+
+            const tF = total.toFixed(2).replace('.',',') + " EUR";
+            document.getElementById('outSubtotal').innerText = tF;
+            document.getElementById('outTotal').innerText = tF;
+        }
+
+        function saveInvoice() {
+            const f = {
+                numero: document.getElementById('inSerie').value,
+                fecha: document.getElementById('inFecha').value,
+                nombre: document.getElementById('inNombre').value,
+                direccion: document.getElementById('inDireccion').value,
+                cp: document.getElementById('inCP').value,
+                provincia: document.getElementById('inProvincia').value,
+                nif: document.getElementById('inNif').value,
+                items: [...items],
+                total: items.reduce((s, i) => s + i.precio, 0)
+            };
+
+            if(!f.nombre) return alert("Por favor, introduce el nombre del paciente.");
+
+            if(editIndex > -1) {
+                dbFacturas[editIndex] = f;
+            } else {
+                dbFacturas.push(f);
+            }
+
+            localStorage.setItem('facturas_footlab', JSON.stringify(dbFacturas));
+            alert("Guardado correctamente.");
+            resetForm();
+            renderHistorial();
+        }
+
+        function renderHistorial() {
+            const list = document.getElementById('historialList');
+            list.innerHTML = '';
+            const sorted = [...dbFacturas].sort((a, b) => b.numero - a.numero);
+
+            sorted.forEach(f => {
+                const realIdx = dbFacturas.findIndex(x => x.numero === f.numero);
+                const div = document.createElement('div');
+                div.className = "p-3 bg-gray-50 border rounded flex justify-between items-center hover:bg-white transition-colors group";
+                div.innerHTML = `
+                    <div class="truncate mr-2">
+                        <p class="font-bold text-gray-800">#${f.numero} - ${f.nombre}</p>
+                        <p class="text-[10px] text-gray-500 uppercase font-medium">${f.fecha} • <span class="text-blue-600">${f.total.toFixed(2)}€</span></p>
+                    </div>
+                    <div class="flex gap-1 shrink-0">
+                        <button onclick="editInvoice(${realIdx})" class="bg-gray-200 text-gray-700 px-2 py-1 rounded text-[10px] hover:bg-amber-500 hover:text-white transition">EDITAR</button>
+                        <button onclick="printFromHistory(${realIdx})" class="bg-blue-600 text-white px-2 py-1 rounded text-[10px] hover:bg-blue-700 transition">PDF</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function editInvoice(index) {
+            editIndex = index;
+            const f = dbFacturas[index];
+            document.getElementById('formTitle').innerText = "Editando #" + f.numero;
+            document.getElementById('btnSave').innerText = "Actualizar";
+            
+            document.getElementById('inSerie').value = f.numero;
+            document.getElementById('inFecha').value = f.fecha;
+            document.getElementById('inNombre').value = f.nombre;
+            document.getElementById('inDireccion').value = f.direccion;
+            document.getElementById('inCP').value = f.cp;
+            document.getElementById('inProvincia').value = f.provincia;
+            document.getElementById('inNif').value = f.nif;
+            items = f.items;
+            renderItemsInputs();
+            updateView();
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        // --- FUNCIONES DE IMPRESIÓN ---
+        
+        function prePrint() {
+            const num = document.getElementById('inSerie').value;
+            const nom = document.getElementById('inNombre').value || "Paciente";
+            // Cambiamos el título para el nombre del archivo PDF
+            document.title = "Factura_" + num + "_" + nom;
+            window.print();
+            // Restauramos
+            document.title = "Sistema Footlab - Facturación";
+        }
+
+        function printFromHistory(index) {
+            editInvoice(index);
+            const f = dbFacturas[index];
+            document.title = "Factura_" + f.numero + "_" + f.nombre;
+            setTimeout(() => { 
+                window.print(); 
+                document.title = "Sistema Footlab - Facturación";
+            }, 300);
+        }
+
+        init();
+    </script>
+</body>
+</html>
