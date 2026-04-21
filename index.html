@@ -8,28 +8,26 @@
     <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; }
         
-        /* --- ELIMINACIÓN DE CABECERAS Y PIES DE PÁGINA DEL NAVEGADOR --- */
+        /* ELIMINAR CABECERAS Y PIES DE PÁGINA (URL, FECHA) */
         @page { 
             size: auto; 
-            margin: 0mm; /* Al poner margen 0, el navegador no tiene sitio para escribir la URL */
+            margin: 0mm; 
         }
 
         @media print {
             .no-print { display: none !important; }
             body { background: white; padding: 0; margin: 0; }
-            
             .print-paper { 
                 box-shadow: none !important; 
                 border: none !important; 
                 width: 100% !important; 
                 max-width: 100% !important; 
                 margin: 0 !important;
-                /* Compensamos el margen 0 de la página con padding interno para el contenido */
                 padding: 1.5cm 2cm !important; 
             }
         }
 
-        /* Estilo para visualización en pantalla */
+        /* Vista en pantalla */
         .print-paper { 
             max-width: 850px; 
             margin: auto; 
@@ -39,11 +37,12 @@
             min-height: 297mm; 
         }
 
-        .logo-foot { font-size: 28px; font-weight: 300; color: #2C3E50; }
-        .logo-lab { font-size: 28px; font-weight: bold; color: #2C3E50; margin-left: -2px; }
-        .logo-footprint { font-size: 30px; color: #3498DB; margin-right: 2px; }
         .input-field { width: 100%; border: 1px solid #ddd; padding: 6px; border-radius: 4px; font-size: 0.85rem; margin-top: 4px; outline-color: #3498DB; }
         label { font-size: 0.75rem; font-weight: bold; color: #555; }
+        
+        /* Estilo para el historial */
+        .history-item:hover .action-btns { opacity: 1; }
+        .action-btns { opacity: 0.7; transition: opacity 0.2s; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -55,7 +54,7 @@
             <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600">
                 <div class="flex justify-between items-center mb-4 border-b pb-2">
                     <h2 id="formTitle" class="text-lg font-bold text-gray-800">Nueva Factura</h2>
-                    <button onclick="resetForm()" class="text-xs text-red-500 hover:font-bold transition-all">Limpiar / Nueva</button>
+                    <button onclick="resetForm()" class="text-xs text-red-500 hover:font-bold">Nueva / Limpiar</button>
                 </div>
                 
                 <div class="space-y-3">
@@ -65,15 +64,15 @@
                             <input type="number" id="inSerie" oninput="updateView()" class="input-field bg-gray-50 font-bold text-blue-700">
                         </div>
                         <div>
-                            <label>Fecha Factura</label>
+                            <label>Fecha</label>
                             <input type="date" id="inFecha" oninput="updateView()" class="input-field">
                         </div>
                     </div>
 
                     <div class="border-t pt-3 mt-3">
                         <label class="text-blue-600 text-[10px] uppercase tracking-widest mb-2 block">Datos del Paciente</label>
-                        <input type="text" id="inNombre" oninput="updateView()" placeholder="Nombre del Paciente" class="input-field mb-2">
-                        <input type="text" id="inDireccion" oninput="updateView()" placeholder="Dirección (Calle y Nº)" class="input-field mb-2">
+                        <input type="text" id="inNombre" oninput="updateView()" placeholder="Nombre y Apellidos" class="input-field mb-2">
+                        <input type="text" id="inDireccion" oninput="updateView()" placeholder="Dirección" class="input-field mb-2">
                         <div class="grid grid-cols-2 gap-2 mb-2">
                             <input type="text" id="inCP" oninput="updateView()" placeholder="Cód. Postal" class="input-field">
                             <input type="text" id="inProvincia" oninput="updateView()" placeholder="Provincia" class="input-field">
@@ -82,15 +81,15 @@
                     </div>
 
                     <div id="itemsContainer" class="border-t pt-3 mt-3">
-                        <label class="text-blue-600 text-[10px] uppercase tracking-widest mb-2 block">Servicios</label>
-                        </div>
-                    <button onclick="addItem()" class="w-full text-[10px] bg-gray-50 py-1 rounded border border-dashed border-gray-300 hover:bg-gray-100 text-gray-600">+ Añadir otro concepto</button>
+                        <label class="text-blue-600 text-[10px] uppercase tracking-widest mb-2 block">Conceptos Facturables</label>
+                    </div>
+                    <button onclick="addItem()" class="w-full text-[10px] bg-gray-50 py-1 rounded border border-dashed border-gray-300 hover:bg-gray-100 text-gray-500">+ Añadir concepto</button>
 
                     <div class="pt-6 grid grid-cols-2 gap-2">
-                        <button onclick="saveInvoice()" id="btnSave" class="bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 shadow shadow-green-100 text-xs uppercase">
+                        <button onclick="saveInvoice()" id="btnSave" class="bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 shadow text-xs uppercase">
                             Guardar
                         </button>
-                        <button onclick="prePrint()" class="bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 shadow shadow-blue-100 text-xs uppercase">
+                        <button onclick="prePrint()" class="bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 shadow text-xs uppercase">
                             Imprimir PDF
                         </button>
                     </div>
@@ -98,17 +97,16 @@
             </div>
 
             <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-gray-400">
-                <h2 class="text-lg font-bold mb-4 border-b pb-2 text-gray-700">Historial de Facturas</h2>
-                <div id="historialList" class="space-y-2 max-h-[450px] overflow-y-auto pr-2 text-sm">
-                    </div>
+                <h2 class="text-lg font-bold mb-4 border-b pb-2 text-gray-700">Historial</h2>
+                <div id="historialList" class="space-y-2 max-h-[400px] overflow-y-auto pr-2"></div>
             </div>
         </div>
 
         <div class="print-paper" id="factura">
             <div class="flex justify-between items-start mb-10">
                 <div>
-                    <div class="flex items-center mb-2">
-                        <span class="logo-footprint">👣</span><span class="logo-foot">foot</span><span class="logo-lab">lab</span>
+                    <div class="mb-4">
+                        <img id="logoImg" src="https://i.imgur.com/F5LhBiA.jpeg" alt="Logo Footlab" class="h-20 w-auto object-contain print:h-24">
                     </div>
                     <div class="text-[12px] leading-tight text-gray-600">
                         <p class="font-bold text-gray-700 uppercase">LAURA RAMOS BLANCO</p>
@@ -158,29 +156,28 @@
                         <span class="font-bold">IVA Exento</span><span>0,00 EUR</span>
                     </div>
                     <div class="flex justify-between text-sm border-t border-gray-800 pt-2 mt-2 px-1">
-                        <span class="font-bold uppercase tracking-tighter">Importe total</span><span id="outTotal" class="font-bold text-gray-900">0,00 EUR</span>
+                        <span class="font-bold uppercase">Importe total</span><span id="outTotal" class="font-bold text-gray-900">0,00 EUR</span>
                     </div>
                 </div>
             </div>
 
             <div class="text-[9.5px] text-gray-500 leading-snug border-t pt-6">
-                <p class="font-bold text-gray-700 mb-1 uppercase">Nota legal</p>
+                <p class="font-bold text-gray-700 mb-1 uppercase text-[10px]">Nota legal</p>
                 <p>DRA. LAURA RAMOS BLANCO - NO. COL. 1880</p>
                 <p class="mt-1 italic">Factura exenta de IVA según: Ley 37/1992, de 28 de diciembre, art. 20. Uno.</p>
                 <p class="mt-4 text-justify opacity-80 leading-normal">
-                   Le informamos conforme a lo previsto en el RGPD de 27 de abril de 2016 que Laura Ramos Blanco, recaba y trata sus datos
-                   de carácter personal, aplicando las medidas técnicas y organizativas que garantizan su confidencialidad, con la finalidad de
-                   gestionar la relación que le vincula. Usted da su consentimiento y autorización para dicho tratamiento. Conservaremos sus
-                   datos de carácter personal únicamente el tiempo imprescindible para gestionar nuestra relación. Podrá ejercitar los derechos
-                   de acceso, rectificación, supresión, limitación, portabilidad y oposición dirigiéndose a Laura Ramos Blanco C/ Vallehermoso50,
-                 28015 Madrid. administracion@footlab.es
+                    Le informamos conforme a lo previsto en el RGPD de 27 de abril de 2016 que Laura Ramos Blanco, recaba y trata sus datos de
+                    carácter personal, aplicando las medidas técnicas y organizativas que garantizan su confidencialidad, con la finalidad de 
+                    gestionar la relación que le vincula. Usted da su consentimiento y autorización para dicho tratamiento. Conservaremos sus 
+                    datos de carácter personal únicamente el tiempo imprescindible para gestionar nuestra relación. Podrá ejercitar los derechos 
+                    de acceso, rectificación, supresión, limitación, portabilidad y oposición dirigiéndose a Laura Ramos Blanco C/ Vallehermoso50,
+                    28015 Madrid. administracion@footlab.es
                 </p>
             </div>
         </div>
     </div>
 
     <script>
-        // Memoria y Estado
         let dbFacturas = JSON.parse(localStorage.getItem('facturas_footlab')) || [];
         let items = [];
         let editIndex = -1;
@@ -194,10 +191,7 @@
             editIndex = -1;
             document.getElementById('formTitle').innerText = "Nueva Factura";
             document.getElementById('btnSave').innerText = "Guardar";
-            
-            // Lógica correlativa: Busca el máximo número guardado y suma 1
             const proximoNum = dbFacturas.length > 0 ? Math.max(...dbFacturas.map(f => parseInt(f.numero))) + 1 : 154;
-            
             document.getElementById('inSerie').value = proximoNum;
             document.getElementById('inFecha').value = new Date().toISOString().split('T')[0];
             document.getElementById('inNombre').value = "";
@@ -205,13 +199,7 @@
             document.getElementById('inCP').value = "";
             document.getElementById('inProvincia').value = "";
             document.getElementById('inNif').value = "";
-            
-            items = [
-                { desc: 'Quiropodia', cant: '1 unidad', precio: 35 },
-                { desc: '', cant: '', precio: 0 },
-                { desc: '', cant: '', precio: 0 }
-            ];
-            
+            items = [{ desc: 'Quiropodia', cant: '1 unidad', precio: 35 }, { desc: '', cant: '', precio: 0 }];
             renderItemsInputs();
             updateView();
         }
@@ -222,13 +210,11 @@
             items.forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = "bg-gray-50 p-2 rounded mb-2 border border-gray-100";
-                div.innerHTML = `
-                    <input type="text" placeholder="Concepto" value="${item.desc}" oninput="updateItem(${index}, 'desc', this.value)" class="input-field mb-1">
+                div.innerHTML = `<input type="text" placeholder="Concepto" value="${item.desc}" oninput="updateItem(${index}, 'desc', this.value)" class="input-field mb-1">
                     <div class="grid grid-cols-2 gap-2">
                         <input type="text" placeholder="Cant." value="${item.cant}" oninput="updateItem(${index}, 'cant', this.value)" class="input-field">
                         <input type="number" placeholder="Importe €" value="${item.precio || ''}" oninput="updateItem(${index}, 'precio', this.value)" class="input-field">
-                    </div>
-                `;
+                    </div>`;
                 container.appendChild(div);
             });
         }
@@ -249,7 +235,6 @@
             const fecha = document.getElementById('inFecha').value;
             const parts = fecha.split('-');
             const fDisplay = fecha ? `${parts[2]}/${parts[1]}/${parts[0]}` : '--/--/----';
-
             document.getElementById('outSerie').innerText = num;
             document.getElementById('outFecha').innerText = fDisplay;
             document.getElementById('outFechaOp').innerText = fDisplay;
@@ -258,25 +243,21 @@
             document.getElementById('outCP').innerText = document.getElementById('inCP').value || "";
             document.getElementById('outProvincia').innerText = document.getElementById('inProvincia').value || "";
             document.getElementById('outNif').innerText = document.getElementById('inNif').value || "---";
-
             const tbody = document.getElementById('outTableBody');
             tbody.innerHTML = '';
             let total = 0;
-
             items.forEach(item => {
                 if(item.desc || item.precio > 0) {
                     total += item.precio;
                     const pF = item.precio.toFixed(2).replace('.',',');
-                    tbody.innerHTML += `
-                        <tr class="border-b border-gray-100">
-                            <td class="py-2 text-gray-700">${item.desc}</td>
-                            <td class="text-center py-2 text-gray-700">${item.cant}</td>
-                            <td class="text-right py-2 text-gray-700 font-mono">${pF} EUR</td>
-                            <td class="text-right py-2 font-bold text-gray-800 font-mono">${pF} EUR</td>
-                        </tr>`;
+                    tbody.innerHTML += `<tr class="border-b border-gray-100">
+                        <td class="py-2 text-gray-700">${item.desc}</td>
+                        <td class="text-center py-2 text-gray-700">${item.cant}</td>
+                        <td class="text-right py-2 font-mono">${pF} EUR</td>
+                        <td class="text-right py-2 font-bold font-mono">${pF} EUR</td>
+                    </tr>`;
                 }
             });
-
             const tF = total.toFixed(2).replace('.',',') + " EUR";
             document.getElementById('outSubtotal').innerText = tF;
             document.getElementById('outTotal').innerText = tF;
@@ -294,17 +275,10 @@
                 items: [...items],
                 total: items.reduce((s, i) => s + i.precio, 0)
             };
-
-            if(!f.nombre) return alert("Por favor, introduce el nombre del paciente.");
-
-            if(editIndex > -1) {
-                dbFacturas[editIndex] = f;
-            } else {
-                dbFacturas.push(f);
-            }
-
+            if(!f.nombre) return alert("Nombre de paciente obligatorio");
+            if(editIndex > -1) dbFacturas[editIndex] = f;
+            else dbFacturas.push(f);
             localStorage.setItem('facturas_footlab', JSON.stringify(dbFacturas));
-            alert("Guardado correctamente.");
             resetForm();
             renderHistorial();
         }
@@ -312,22 +286,14 @@
         function renderHistorial() {
             const list = document.getElementById('historialList');
             list.innerHTML = '';
-            const sorted = [...dbFacturas].sort((a, b) => b.numero - a.numero);
-
-            sorted.forEach(f => {
+            [...dbFacturas].sort((a, b) => b.numero - a.numero).forEach(f => {
                 const realIdx = dbFacturas.findIndex(x => x.numero === f.numero);
                 const div = document.createElement('div');
-                div.className = "p-3 bg-gray-50 border rounded flex justify-between items-center hover:bg-white transition-colors group";
-                div.innerHTML = `
-                    <div class="truncate mr-2">
-                        <p class="font-bold text-gray-800">#${f.numero} - ${f.nombre}</p>
-                        <p class="text-[10px] text-gray-500 uppercase font-medium">${f.fecha} • <span class="text-blue-600">${f.total.toFixed(2)}€</span></p>
-                    </div>
-                    <div class="flex gap-1 shrink-0">
-                        <button onclick="editInvoice(${realIdx})" class="bg-gray-200 text-gray-700 px-2 py-1 rounded text-[10px] hover:bg-amber-500 hover:text-white transition">EDITAR</button>
-                        <button onclick="printFromHistory(${realIdx})" class="bg-blue-600 text-white px-2 py-1 rounded text-[10px] hover:bg-blue-700 transition">PDF</button>
-                    </div>
-                `;
+                div.className = "p-3 bg-gray-50 border rounded flex justify-between items-center text-xs hover:bg-white history-item transition";
+                div.innerHTML = `<div class="truncate mr-2"><p class="font-bold">#${f.numero} - ${f.nombre}</p>
+                    <p class="text-gray-500">${f.fecha} • <span class="text-blue-600 font-bold">${f.total.toFixed(2)}€</span></p></div>
+                    <div class="flex gap-1 action-btns"><button onclick="editInvoice(${realIdx})" class="bg-gray-200 px-2 py-1 rounded hover:bg-amber-500 hover:text-white">EDT</button>
+                    <button onclick="printFromHistory(${realIdx})" class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">PDF</button></div>`;
                 list.appendChild(div);
             });
         }
@@ -337,7 +303,6 @@
             const f = dbFacturas[index];
             document.getElementById('formTitle').innerText = "Editando #" + f.numero;
             document.getElementById('btnSave').innerText = "Actualizar";
-            
             document.getElementById('inSerie').value = f.numero;
             document.getElementById('inFecha').value = f.fecha;
             document.getElementById('inNombre').value = f.nombre;
@@ -351,15 +316,11 @@
             window.scrollTo({top: 0, behavior: 'smooth'});
         }
 
-        // --- FUNCIONES DE IMPRESIÓN ---
-        
         function prePrint() {
             const num = document.getElementById('inSerie').value;
             const nom = document.getElementById('inNombre').value || "Paciente";
-            // Cambiamos el título para el nombre del archivo PDF
             document.title = "Factura_" + num + "_" + nom;
             window.print();
-            // Restauramos
             document.title = "Sistema Footlab - Facturación";
         }
 
@@ -367,10 +328,7 @@
             editInvoice(index);
             const f = dbFacturas[index];
             document.title = "Factura_" + f.numero + "_" + f.nombre;
-            setTimeout(() => { 
-                window.print(); 
-                document.title = "Sistema Footlab - Facturación";
-            }, 300);
+            setTimeout(() => { window.print(); document.title = "Sistema Footlab - Facturación"; }, 300);
         }
 
         init();
