@@ -43,13 +43,11 @@
         .legal-footer-container { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; min-height: 4.5cm; }
         .stamp-img-render { height: 4cm !important; width: 7cm !important; object-fit: contain; }
         
-        /* Pestañas */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-btn { transition: all 0.3s; border-bottom: 3px solid transparent; }
         .tab-btn.active { border-bottom: 3px solid #2563eb; color: #2563eb; background: #f8fafc; font-weight: 800; }
         
-        /* Estilos Tabla Factura */
         .invoice-table th { border-bottom: 2px solid #333; padding: 12px 8px; text-transform: uppercase; font-size: 10px; }
         .invoice-table td { padding: 10px 8px; border-bottom: 1px solid #eee; }
     </style>
@@ -116,8 +114,8 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-gray-300">
-                    <h2 class="text-xs font-black uppercase text-gray-500 mb-4 tracking-tighter">Historial Reciente (Firebase)</h2>
-                    <div id="historialList" class="space-y-2 max-h-[300px] overflow-y-auto pr-2 text-xs">
+                    <h2 class="text-xs font-black uppercase text-gray-500 mb-4 tracking-tighter">Últimas Facturas (Firebase)</h2>
+                    <div id="historialList" class="space-y-2 max-h-[400px] overflow-y-auto pr-2 text-xs">
                         <p class="text-center italic text-gray-400">Cargando historial...</p>
                     </div>
                 </div>
@@ -133,8 +131,7 @@
                         <span class="absolute left-2 top-2.5 opacity-30 text-xs">🔍</span>
                     </div>
 
-                    <div id="fullListaClientes" class="space-y-2 max-h-[600px] overflow-y-auto pr-2">
-                        </div>
+                    <div id="fullListaClientes" class="space-y-2 max-h-[600px] overflow-y-auto pr-2"></div>
                 </div>
             </div>
         </div>
@@ -174,8 +171,7 @@
                         <th class="text-right">Total</th>
                     </tr>
                 </thead>
-                <tbody id="outTableBody">
-                    </tbody>
+                <tbody id="outTableBody"></tbody>
             </table>
 
             <div class="flex justify-end mb-10">
@@ -204,9 +200,8 @@
     </div>
 
     <script type="module">
-        import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // ESTADO GLOBAL
         let dbFacturas = [];
         let dbClientes = [];
         window.items = [{ desc: 'Quiropodia profesional', cant: '1 unidad', precio: 35 }];
@@ -218,7 +213,6 @@
             resetForm();
         });
 
-        // 1. GESTIÓN DE NAVEGACIÓN
         window.switchTab = function(tab) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -231,7 +225,6 @@
             }
         }
 
-        // 2. GESTIÓN DE PACIENTES
         function escucharClientes() {
             onSnapshot(collection(window.dbFirestore, "clientes"), (snapshot) => {
                 dbClientes = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
@@ -241,6 +234,7 @@
 
         function actualizarVistasClientes() {
             const list = document.getElementById('listaPacientes');
+            if(!list) return;
             list.innerHTML = '';
             dbClientes.forEach(c => {
                 const opt = document.createElement('option');
@@ -252,6 +246,7 @@
 
         function renderListaClientesCompleta(lista) {
             const container = document.getElementById('fullListaClientes');
+            if(!container) return;
             container.innerHTML = '';
             if(lista.length === 0) {
                 container.innerHTML = '<p class="text-center text-xs text-gray-400 py-10">No hay pacientes.</p>';
@@ -306,7 +301,6 @@
             renderListaClientesCompleta(filtrados);
         }
 
-        // 3. EXCEL
         window.importarPacientesCloud = async function(input) {
             if(!input.files[0]) return;
             const status = document.getElementById('importStatus');
@@ -333,7 +327,6 @@
             reader.readAsArrayBuffer(input.files[0]);
         }
 
-        // 4. FACTURAS
         function escucharFacturas() {
             const q = query(collection(window.dbFirestore, "facturas"), orderBy("numero", "desc"));
             onSnapshot(q, (snapshot) => {
@@ -378,14 +371,35 @@
             finally { btn.disabled = false; }
         }
 
+        // --- FUNCIÓN PARA BORRAR FACTURA ---
+        window.eliminarFactura = async function(e, id) {
+            e.stopPropagation(); // Evita que al hacer clic en borrar se abra para editar
+            if(confirm("¿Estás segura de que quieres borrar esta factura permanentemente de la nube?")) {
+                try {
+                    await deleteDoc(doc(window.dbFirestore, "facturas", id));
+                } catch (error) {
+                    alert("Error al borrar");
+                }
+            }
+        }
+
         window.renderHistorial = function() {
             const list = document.getElementById('historialList');
+            if(!list) return;
             list.innerHTML = '';
-            dbFacturas.slice(0, 10).forEach(f => {
+            dbFacturas.slice(0, 15).forEach(f => {
                 const div = document.createElement('div');
                 div.className = "p-2 bg-gray-50 border rounded-md flex justify-between items-center cursor-pointer hover:bg-blue-50 transition border-l-4 border-l-blue-200";
                 div.onclick = () => editInvoice(f);
-                div.innerHTML = `<div><b>#${f.numero}</b> - ${f.nombre}</div> <div class="font-bold">${f.total.toFixed(2)}€</div>`;
+                div.innerHTML = `
+                    <div class="flex-1 min-w-0">
+                        <p class="font-bold truncate">#${f.numero} - ${f.nombre}</p>
+                        <p class="text-[9px] text-gray-400">${f.total.toFixed(2)}€</p>
+                    </div>
+                    <button onclick="eliminarFactura(event, '${f.id}')" class="ml-2 text-red-400 hover:text-red-600 p-1 font-bold">
+                        BORRAR
+                    </button>
+                `;
                 list.appendChild(div);
             });
         }
@@ -420,7 +434,6 @@
             updateView();
         }
 
-        // 5. CONCEPTOS Y VISTA
         window.addItem = function() {
             window.items.push({ desc: '', cant: '1 unidad', precio: 0 });
             renderItemsInputs();
@@ -434,6 +447,7 @@
 
         window.renderItemsInputs = function() {
             const container = document.getElementById('itemsContainer');
+            if(!container) return;
             container.innerHTML = '';
             window.items.forEach((item, i) => {
                 const div = document.createElement('div');
@@ -456,11 +470,12 @@
             document.getElementById('outFechaOp').innerText = fBonita;
             document.getElementById('outNombre').innerText = document.getElementById('inNombre').value.toUpperCase() || "PACIENTE";
             document.getElementById('outDireccion').innerText = document.getElementById('inDireccion').value || "---";
-            document.getElementById('outCP').innerText = document.getElementById('inCP').value;
-            document.getElementById('outProvincia').innerText = document.getElementById('inProvincia').value;
+            document.getElementById('outCP').innerText = document.getElementById('inCP').value || "";
+            document.getElementById('outProvincia').innerText = document.getElementById('inProvincia').value || "";
             document.getElementById('outNif').innerText = document.getElementById('inNif').value || "---";
 
             const tb = document.getElementById('outTableBody');
+            if(!tb) return;
             tb.innerHTML = '';
             let total = 0;
             window.items.forEach(item => {
