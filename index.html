@@ -9,7 +9,7 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, orderBy, onSnapshot, setDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, orderBy, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBQ6A_4h7UVjt_pxBZOaMaZZh-b6-edF2o",
@@ -42,12 +42,10 @@
         label { font-size: 0.75rem; font-weight: bold; color: #555; }
         .legal-footer-container { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; min-height: 4.5cm; }
         .stamp-img-render { height: 4cm !important; width: 7cm !important; object-fit: contain; }
-        
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-btn { transition: all 0.3s; border-bottom: 3px solid transparent; }
         .tab-btn.active { border-bottom: 3px solid #2563eb; color: #2563eb; background: #f8fafc; font-weight: 800; }
-        
         .invoice-table th { border-bottom: 2px solid #333; padding: 12px 8px; text-transform: uppercase; font-size: 10px; }
         .invoice-table td { padding: 10px 8px; border-bottom: 1px solid #eee; }
     </style>
@@ -59,7 +57,7 @@
         <div class="no-print space-y-6">
             <div class="flex border-b bg-white rounded-t-lg shadow-sm overflow-hidden">
                 <button onclick="switchTab('facturacion')" id="tabFact" class="tab-btn active flex-1 py-4 text-xs font-bold uppercase">Facturación</button>
-                <button onclick="switchTab('reportes')" id="tabRepo" class="tab-btn flex-1 py-4 text-xs font-bold uppercase">Reportes Excel</button>
+                <button onclick="switchTab('reportes')" id="tabRepo" class="tab-btn flex-1 py-4 text-xs font-bold uppercase">Reportes</button>
                 <button onclick="switchTab('clientes')" id="tabCli" class="tab-btn flex-1 py-4 text-xs font-bold uppercase">Pacientes</button>
             </div>
 
@@ -92,7 +90,7 @@
                             <button onclick="addItem()" class="w-full mt-2 text-[10px] bg-gray-50 py-2 rounded border border-dashed border-gray-300 text-gray-500">+ Concepto</button>
                         </div>
                         <div class="pt-6 space-y-3">
-                            <button onclick="saveInvoice()" id="btnSave" class="w-full bg-green-600 text-white font-black py-3 rounded-lg hover:bg-green-700 text-xs uppercase shadow-md">Guardar en Firebase</button>
+                            <button onclick="saveInvoice()" id="btnSave" class="w-full bg-green-600 text-white font-black py-3 rounded-lg hover:bg-green-700 text-xs uppercase shadow-md">Guardar Cambios</button>
                             <div class="grid grid-cols-2 gap-2">
                                 <button onclick="prePrint(false)" class="bg-gray-700 text-white font-bold py-3 rounded-lg text-[10px] uppercase">Sin Sello</button>
                                 <button onclick="prePrint(true)" class="bg-blue-600 text-white font-bold py-3 rounded-lg text-[10px] uppercase shadow-lg">Con Sello</button>
@@ -109,31 +107,23 @@
 
             <div id="viewReportes" class="tab-content space-y-6">
                 <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-green-500">
-                    <h2 class="text-lg font-black text-gray-800 mb-4 uppercase">Descargar Listado Excel</h2>
+                    <h2 class="text-lg font-black text-gray-800 mb-4 uppercase">Reporte Económico</h2>
                     <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label>Desde:</label>
-                            <input type="date" id="repDesde" class="input-field">
-                        </div>
-                        <div>
-                            <label>Hasta:</label>
-                            <input type="date" id="repHasta" class="input-field">
-                        </div>
+                        <div><label>Desde:</label><input type="date" id="repDesde" onchange="actualizarSumaReporte()" class="input-field"></div>
+                        <div><label>Hasta:</label><input type="date" id="repHasta" onchange="actualizarSumaReporte()" class="input-field"></div>
                     </div>
                     <div class="bg-gray-50 p-4 rounded-lg mb-6 text-center border">
-                        <p class="text-[10px] text-gray-400 uppercase font-bold">Total Facturado en Periodo</p>
+                        <p class="text-[10px] text-gray-400 uppercase font-bold">Total Periodo</p>
                         <p id="repTotalSuma" class="text-2xl font-black text-green-600">0,00 €</p>
                     </div>
-                    <button onclick="descargarExcelFacturas()" class="w-full bg-green-600 text-white font-black py-4 rounded-lg hover:bg-green-700 uppercase shadow-lg flex items-center justify-center gap-2">
-                        <span>📊</span> DESCARGAR EXCEL PROFESIONAL
-                    </button>
+                    <button onclick="descargarExcelFacturas()" class="w-full bg-green-600 text-white font-black py-4 rounded-lg hover:bg-green-700 uppercase shadow-lg flex items-center justify-center gap-2">📊 DESCARGAR EXCEL</button>
                 </div>
             </div>
 
             <div id="viewClientes" class="tab-content space-y-6">
                 <div class="bg-white p-6 rounded-lg shadow-md border-t-4 border-blue-600">
-                    <h2 class="text-lg font-black text-gray-800 mb-2 uppercase">Base de Datos Pacientes</h2>
-                    <input type="text" id="buscadorClientes" oninput="filtrarPacientes(this.value)" placeholder="Buscar por nombre o NIF..." class="input-field mb-4">
+                    <h2 class="text-lg font-black text-gray-800 mb-2 uppercase">Base de Datos</h2>
+                    <input type="text" id="buscadorClientes" oninput="filtrarPacientes(this.value)" placeholder="Buscar..." class="input-field mb-4">
                     <div id="fullListaClientes" class="space-y-2 max-h-[600px] overflow-y-auto"></div>
                 </div>
             </div>
@@ -143,51 +133,37 @@
             <div class="flex justify-between items-start mb-10">
                 <div>
                     <img src="https://i.imgur.com/F5LhBiA.jpeg" alt="Logo" class="h-20 mb-4">
-                    <div class="text-[12px] text-gray-600">
-                        <p class="font-bold text-gray-700 uppercase">LAURA RAMOS BLANCO</p>
+                    <div class="text-[12px] text-gray-600 uppercase">
+                        <p class="font-bold text-gray-700">LAURA RAMOS BLANCO</p>
                         <p>C/ Vallehermoso Nº50 | 28015 Madrid</p>
                         <p>NIF: ES32687465A | lramos@footlab.es</p>
                     </div>
                 </div>
                 <div class="bg-gray-50 p-4 min-w-[240px] text-[12px] border">
-                    <p class="mb-1 uppercase text-[10px] font-bold text-gray-400">Datos del documento</p>
+                    <p class="mb-1 uppercase text-[10px] font-bold text-gray-400">Documento</p>
                     <p>Factura: <b id="outSerie">---</b></p>
                     <p>Fecha: <span id="outFecha">--/--/----</span></p>
                     <p>Fecha de operación: <span id="outFechaOp">--/--/----</span></p>
                 </div>
             </div>
-
             <div class="mb-12 text-[12px] p-4 bg-white border border-gray-100 rounded">
-                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Paciente / Destinatario</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Paciente</p>
                 <p class="font-bold uppercase text-base text-gray-800" id="outNombre">PACIENTE</p>
                 <p id="outDireccion">---</p>
                 <p><span id="outCP"></span> <span id="outProvincia"></span></p>
                 <p class="mt-1 font-mono">NIF: <span id="outNif">---</span></p>
             </div>
-
             <table class="w-full text-[12px] mb-8 invoice-table">
-                <thead>
-                    <tr class="text-left uppercase">
-                        <th class="w-[60%]">Descripción del Servicio</th>
-                        <th class="text-center">Cant.</th>
-                        <th class="text-right">Precio Un.</th>
-                        <th class="text-right">Total</th>
-                    </tr>
-                </thead>
+                <thead><tr class="text-left uppercase"><th>Descripción</th><th class="text-center">Cant.</th><th class="text-right">Precio</th><th class="text-right">Total</th></tr></thead>
                 <tbody id="outTableBody"></tbody>
             </table>
-
             <div class="flex justify-end mb-10">
                 <div class="w-[220px] text-[13px] border-t-2 border-gray-800 pt-3 font-bold uppercase text-right">
-                    <div class="flex justify-between items-center"><span class="text-gray-500">TOTAL:</span><span id="outTotal" class="text-lg">0,00 EUR</span></div>
+                    <div class="flex justify-between items-center"><span class="text-gray-500">TOTAL FACTURA:</span><span id="outTotal" class="text-lg">0,00 EUR</span></div>
                 </div>
             </div>
-
             <div class="legal-footer-container">
-                <div class="text-[9.5px] text-gray-500 italic">
-                    <p class="font-bold text-gray-700 not-italic uppercase">Dra. Laura Ramos Blanco</p>
-                    <p>Graduada en Podología | Colegiado No. 1880 - Madrid</p>
-                </div>
+                <div class="text-[9.5px] text-gray-500 italic"><p class="font-bold text-gray-700 not-italic uppercase">Dra. Laura Ramos Blanco</p><p>Graduada en Podología | Colegiado 1880</p></div>
                 <img src="" id="imgSelloFirma" alt="Sello" class="stamp-img-render">
             </div>
         </div>
@@ -196,7 +172,6 @@
     <script type="module">
         import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // --- CONFIGURACIÓN ---
         const MI_SELLO_BASE64 = "data:image/png;base64,TU_CODIGO_BASE64_AQUI"; 
 
         let dbFacturas = [];
@@ -206,13 +181,9 @@
 
         window.addEventListener('load', () => {
             if(MI_SELLO_BASE64.length > 50) document.getElementById('imgSelloFirma').src = MI_SELLO_BASE64;
-            // Fechas por defecto para reportes (mes actual)
             const hoy = new Date();
-            const primero = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
-            const ultimo = hoy.toISOString().split('T')[0];
-            document.getElementById('repDesde').value = primero;
-            document.getElementById('repHasta').value = ultimo;
-
+            document.getElementById('repDesde').value = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
+            document.getElementById('repHasta').value = hoy.toISOString().split('T')[0];
             escucharFacturas();
             escucharClientes();
             resetForm();
@@ -226,19 +197,13 @@
             if(tab === 'reportes') actualizarSumaReporte();
         }
 
-        // --- LÓGICA DE FIREBASE ---
         function escucharClientes() {
-            onSnapshot(collection(window.dbFirestore, "clientes"), (snapshot) => {
-                dbClientes = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-                actualizarVistasClientes();
+            onSnapshot(collection(window.dbFirestore, "clientes"), (s) => {
+                dbClientes = s.docs.map(d => ({id: d.id, ...d.data()}));
+                const list = document.getElementById('listaPacientes');
+                if(list) list.innerHTML = dbClientes.map(c => `<option value="${c.Nombre}">`).join('');
+                renderListaClientesCompleta(dbClientes);
             });
-        }
-
-        function actualizarVistasClientes() {
-            const list = document.getElementById('listaPacientes');
-            if(!list) return;
-            list.innerHTML = dbClientes.map(c => `<option value="${c.Nombre}">`).join('');
-            renderListaClientesCompleta(dbClientes);
         }
 
         function renderListaClientesCompleta(lista) {
@@ -248,8 +213,8 @@
                 <div class="p-3 bg-white border rounded-lg flex justify-between items-center text-[11px] mb-2 shadow-sm">
                     <div><p class="font-bold text-blue-800 uppercase">${c.Nombre}</p><p class="text-gray-400">${c.NIF || 'Sin NIF'}</p></div>
                     <div class="flex gap-2">
-                        <button onclick="cargarParaFacturar('${c.id}')" class="bg-blue-50 text-blue-600 px-3 py-1 rounded font-bold hover:bg-blue-600 hover:text-white transition">USAR</button>
-                        <button onclick="eliminarCliente('${c.id}')" class="text-red-400 px-2 font-bold hover:text-red-600">X</button>
+                        <button onclick="cargarParaFacturar('${c.id}')" class="bg-blue-50 text-blue-600 px-3 py-1 rounded font-bold">USAR</button>
+                        <button onclick="eliminarCliente('${c.id}')" class="text-red-400 px-2 font-bold">X</button>
                     </div>
                 </div>
             `).join('');
@@ -258,7 +223,7 @@
         function escucharFacturas() {
             const q = query(collection(window.dbFirestore, "facturas"), orderBy("numero", "desc"));
             onSnapshot(q, (snapshot) => {
-                dbFacturas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                dbFacturas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                 renderHistorial();
                 actualizarSumaReporte();
                 if(!editDocId) {
@@ -287,66 +252,20 @@
             if(!data.nombre) return alert("Nombre obligatorio");
             btn.disabled = true;
             try {
-                if(editDocId) await updateDoc(doc(window.dbFirestore, "facturas", editDocId), data);
-                else await addDoc(collection(window.dbFirestore, "facturas"), data);
+                if(editDocId) {
+                    await updateDoc(doc(window.dbFirestore, "facturas", editDocId), data);
+                } else {
+                    await addDoc(collection(window.dbFirestore, "facturas"), data);
+                }
                 await setDoc(doc(window.dbFirestore, "clientes", data.nombre), { Nombre: data.nombre, NIF: data.nif, Direccion: data.direccion, CP: data.cp, Provincia: data.provincia });
                 resetForm();
-                alert("Guardado OK.");
-            } catch (e) { alert("Error."); } finally { btn.disabled = false; }
-        }
-
-        window.eliminarFactura = async function(e, id) {
-            e.stopPropagation();
-            if(confirm("¿Borrar factura permanentemente?")) await deleteDoc(doc(window.dbFirestore, "facturas", id));
-        }
-
-        // --- EXPORTACIÓN EXCEL ---
-        window.actualizarSumaReporte = function() {
-            const d = document.getElementById('repDesde').value;
-            const h = document.getElementById('repHasta').value;
-            const filtradas = dbFacturas.filter(f => f.fecha >= d && f.fecha <= h);
-            const total = filtradas.reduce((s, f) => s + (f.total || 0), 0);
-            document.getElementById('repTotalSuma').innerText = total.toFixed(2).replace('.', ',') + " €";
-        }
-
-        window.descargarExcelFacturas = function() {
-            const d = document.getElementById('repDesde').value;
-            const h = document.getElementById('repHasta').value;
-            const filtradas = dbFacturas.filter(f => f.fecha >= d && f.fecha <= h).sort((a,b) => a.numero - b.numero);
-            
-            if(filtradas.length === 0) return alert("No hay facturas en ese rango");
-
-            const dataExcel = filtradas.map(f => ({
-                'NÚMERO': f.numero,
-                'FECHA': f.fecha.split('-').reverse().join('/'),
-                'FECHA OP.': (f.fechaOperacion || f.fecha).split('-').reverse().join('/'),
-                'PACIENTE': f.nombre,
-                'NIF/DNI': f.nif,
-                'BASE EXENTA': f.total.toFixed(2),
-                'IVA': '0.00',
-                'TOTAL': f.total.toFixed(2)
-            }));
-
-            const ws = XLSX.utils.json_to_sheet(dataExcel);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Facturas");
-            XLSX.writeFile(wb, `Facturacion_Footlab_${d}_a_${h}.xlsx`);
-        }
-
-        // --- UI TOOLS ---
-        window.renderHistorial = function() {
-            const list = document.getElementById('historialList');
-            if(!list) return;
-            list.innerHTML = dbFacturas.slice(0, 15).map(f => `
-                <div class="p-2 bg-gray-50 border rounded flex justify-between items-center cursor-pointer hover:bg-blue-50 mb-1 border-l-4 border-l-blue-400" onclick="editInvoice('${f.id}')">
-                    <div class="truncate"><b>#${f.numero}</b> - ${f.nombre}</div>
-                    <button onclick="eliminarFactura(event, '${f.id}')" class="text-red-400 font-bold px-2">X</button>
-                </div>
-            `).join('');
+                alert("Guardado correctamente.");
+            } catch (e) { console.error(e); alert("Error al guardar."); } finally { btn.disabled = false; }
         }
 
         window.editInvoice = function(id) {
             const f = dbFacturas.find(x => x.id === id);
+            if(!f) return;
             editDocId = f.id;
             document.getElementById('formTitle').innerText = "Editando #" + f.numero;
             document.getElementById('inSerie').value = f.numero;
@@ -363,6 +282,25 @@
             switchTab('facturacion');
         }
 
+        window.renderHistorial = function() {
+            const list = document.getElementById('historialList');
+            if(!list) return;
+            list.innerHTML = dbFacturas.slice(0, 15).map(f => `
+                <div class="p-2 bg-gray-50 border rounded flex justify-between items-center cursor-pointer hover:bg-blue-50 mb-1 border-l-4 border-l-blue-400" onclick="editInvoice('${f.id}')">
+                    <div class="truncate"><b>#${f.numero}</b> - ${f.nombre}</div>
+                    <button onclick="eliminarFactura(event, '${f.id}')" class="text-red-400 font-bold px-2">X</button>
+                </div>
+            `).join('');
+        }
+
+        window.eliminarFactura = async function(e, id) {
+            e.stopPropagation();
+            if(confirm("¿Borrar factura permanentemente?")) {
+                await deleteDoc(doc(window.dbFirestore, "facturas", id));
+                if(editDocId === id) resetForm();
+            }
+        }
+
         window.resetForm = function() {
             editDocId = null;
             const hoy = new Date().toISOString().split('T')[0];
@@ -375,9 +313,37 @@
             renderItemsInputs(); updateView();
         }
 
+        window.actualizarSumaReporte = function() {
+            const d = document.getElementById('repDesde').value;
+            const h = document.getElementById('repHasta').value;
+            const filtradas = dbFacturas.filter(f => f.fecha >= d && f.fecha <= h);
+            const total = filtradas.reduce((s, f) => s + (f.total || 0), 0);
+            document.getElementById('repTotalSuma').innerText = total.toFixed(2).replace('.', ',') + " €";
+        }
+
+        window.descargarExcelFacturas = function() {
+            const d = document.getElementById('repDesde').value;
+            const h = document.getElementById('repHasta').value;
+            const filtradas = dbFacturas.filter(f => f.fecha >= d && f.fecha <= h).sort((a,b) => a.numero - b.numero);
+            if(filtradas.length === 0) return alert("No hay facturas en ese rango");
+            const dataExcel = filtradas.map(f => ({
+                'NÚMERO': f.numero,
+                'FECHA': f.fecha.split('-').reverse().join('/'),
+                'FECHA OP.': (f.fechaOperacion || f.fecha).split('-').reverse().join('/'),
+                'PACIENTE': f.nombre,
+                'NIF/DNI': f.nif,
+                'BASE EXENTA': f.total.toFixed(2),
+                'IVA': '0.00',
+                'TOTAL': f.total.toFixed(2)
+            }));
+            const ws = XLSX.utils.json_to_sheet(dataExcel);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Facturas");
+            XLSX.writeFile(wb, `Facturacion_Footlab_${d}_a_${h}.xlsx`);
+        }
+
         window.addItem = function() { window.items.push({ desc: '', cant: '1 unidad', precio: 0 }); renderItemsInputs(); }
         window.removeItem = function(i) { window.items.splice(i, 1); renderItemsInputs(); updateView(); }
-
         window.renderItemsInputs = function() {
             document.getElementById('itemsContainer').innerHTML = window.items.map((item, i) => `
                 <div class="grid grid-cols-[1fr,60px,30px] gap-1 mb-2 items-center">
@@ -410,12 +376,6 @@
             document.getElementById('outTotal').innerText = total.toFixed(2).replace('.', ',') + " EUR";
         }
 
-        window.prePrint = function(sello) {
-            if(sello) document.body.classList.add('show-stamp');
-            else document.body.classList.remove('show-stamp');
-            window.print();
-        }
-        
         window.buscarYCompletar = function(nombre) {
             const c = dbClientes.find(x => x.Nombre.trim().toLowerCase() === nombre.trim().toLowerCase());
             if(c) {
@@ -426,16 +386,11 @@
             }
             updateView();
         }
-        
-        window.eliminarCliente = async function(id) {
-            if(confirm("¿Eliminar paciente?")) await deleteDoc(doc(window.dbFirestore, "clientes", id));
+        window.prePrint = function(sello) {
+            if(sello) document.body.classList.add('show-stamp');
+            else document.body.classList.remove('show-stamp');
+            window.print();
         }
-
-        window.filtrarPacientes = function(val) {
-            const filtrados = dbClientes.filter(c => c.Nombre.toLowerCase().includes(val.toLowerCase()) || (c.NIF && c.NIF.toLowerCase().includes(val.toLowerCase())));
-            renderListaClientesCompleta(filtrados);
-        }
-        
         window.cargarParaFacturar = function(id) {
             const c = dbClientes.find(x => x.id === id);
             if(c) {
@@ -443,6 +398,13 @@
                 document.getElementById('inNombre').value = c.Nombre;
                 window.buscarYCompletar(c.Nombre);
             }
+        }
+        window.eliminarCliente = async function(id) {
+            if(confirm("¿Eliminar paciente?")) await deleteDoc(doc(window.dbFirestore, "clientes", id));
+        }
+        window.filtrarPacientes = function(val) {
+            const filtrados = dbClientes.filter(c => c.Nombre.toLowerCase().includes(val.toLowerCase()) || (c.NIF && c.NIF.toLowerCase().includes(val.toLowerCase())));
+            renderListaClientesCompleta(filtrados);
         }
     </script>
 </body>
