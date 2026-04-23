@@ -200,7 +200,10 @@
     </div>
 
     <script type="module">
-        import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { collection, addDoc, onSnapshot, query, orderBy, doc, updateDoc, setDoc, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // CONFIGURACIÓN E IMAGENES
+        const MI_SELLO_BASE64 = "data:image/png;base64,TU_CODIGO_BASE64_AQUI"; // <-- PEGA AQUÍ TU CÓDIGO LARGO
 
         let dbFacturas = [];
         let dbClientes = [];
@@ -208,11 +211,18 @@
         let editDocId = null;
 
         window.addEventListener('load', () => {
+            // Cargar imagen de sello si existe
+            if(MI_SELLO_BASE64.length > 50) {
+                document.getElementById('imgSelloFirma').src = MI_SELLO_BASE64;
+            }
+            
+            // Iniciar escucha de Firebase
             escucharFacturas();
             escucharClientes();
             resetForm();
         });
 
+        // --- GESTIÓN DE PESTAÑAS ---
         window.switchTab = function(tab) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -225,6 +235,7 @@
             }
         }
 
+        // --- LÓGICA DE PACIENTES ---
         function escucharClientes() {
             onSnapshot(collection(window.dbFirestore, "clientes"), (snapshot) => {
                 dbClientes = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
@@ -301,6 +312,7 @@
             renderListaClientesCompleta(filtrados);
         }
 
+        // --- IMPORTACIÓN EXCEL ---
         window.importarPacientesCloud = async function(input) {
             if(!input.files[0]) return;
             const status = document.getElementById('importStatus');
@@ -327,13 +339,14 @@
             reader.readAsArrayBuffer(input.files[0]);
         }
 
+        // --- LÓGICA DE FACTURAS ---
         function escucharFacturas() {
             const q = query(collection(window.dbFirestore, "facturas"), orderBy("numero", "desc"));
             onSnapshot(q, (snapshot) => {
                 dbFacturas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderHistorial();
                 if(!editDocId) {
-                    let maxNum = 153;
+                    let maxNum = 153; // Número base
                     if(dbFacturas.length > 0) maxNum = Math.max(...dbFacturas.map(f => parseInt(f.numero) || 0));
                     document.getElementById('inSerie').value = maxNum + 1;
                     updateView();
@@ -362,24 +375,23 @@
                 if(editDocId) await updateDoc(doc(window.dbFirestore, "facturas", editDocId), data);
                 else await addDoc(collection(window.dbFirestore, "facturas"), data);
 
+                // Actualizar datos del paciente automáticamente al guardar factura
                 await setDoc(doc(window.dbFirestore, "clientes", data.nombre), {
                     Nombre: data.nombre, NIF: data.nif, Direccion: data.direccion, CP: data.cp, Provincia: data.provincia
                 });
+                
                 resetForm();
-                alert("Guardado correctamente");
-            } catch (e) { alert("Error Firebase"); }
+                alert("Guardado correctamente en la nube");
+            } catch (e) { alert("Error al guardar en Firebase"); }
             finally { btn.disabled = false; }
         }
 
-        // --- FUNCIÓN PARA BORRAR FACTURA ---
         window.eliminarFactura = async function(e, id) {
-            e.stopPropagation(); // Evita que al hacer clic en borrar se abra para editar
-            if(confirm("¿Estás segura de que quieres borrar esta factura permanentemente de la nube?")) {
+            e.stopPropagation();
+            if(confirm("¿Estás segura de que quieres borrar esta factura permanentemente?")) {
                 try {
                     await deleteDoc(doc(window.dbFirestore, "facturas", id));
-                } catch (error) {
-                    alert("Error al borrar");
-                }
+                } catch (error) { alert("Error al borrar"); }
             }
         }
 
@@ -387,16 +399,16 @@
             const list = document.getElementById('historialList');
             if(!list) return;
             list.innerHTML = '';
-            dbFacturas.slice(0, 15).forEach(f => {
+            dbFacturas.slice(0, 20).forEach(f => {
                 const div = document.createElement('div');
                 div.className = "p-2 bg-gray-50 border rounded-md flex justify-between items-center cursor-pointer hover:bg-blue-50 transition border-l-4 border-l-blue-200";
                 div.onclick = () => editInvoice(f);
                 div.innerHTML = `
                     <div class="flex-1 min-w-0">
-                        <p class="font-bold truncate">#${f.numero} - ${f.nombre}</p>
+                        <p class="font-bold truncate text-[11px]">#${f.numero} - ${f.nombre}</p>
                         <p class="text-[9px] text-gray-400">${f.total.toFixed(2)}€</p>
                     </div>
-                    <button onclick="eliminarFactura(event, '${f.id}')" class="ml-2 text-red-400 hover:text-red-600 p-1 font-bold">
+                    <button onclick="eliminarFactura(event, '${f.id}')" class="ml-2 text-red-400 hover:text-red-600 p-1 font-bold text-[10px]">
                         BORRAR
                     </button>
                 `;
