@@ -12,15 +12,14 @@
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, query, orderBy, onSnapshot, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
-            apiKey: "AIzaSyAqi6ko_PrXnuwpoF4Kl0929o7ykm9XxmE",
-            authDomain: "facturacion-ba1f2.firebaseapp.com",
-            databaseURL: "https://facturacion-ba1f2-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "facturacion-ba1f2",
-            storageBucket: "facturacion-ba1f2.firebasestorage.app",
-            messagingSenderId: "365606429754",
-            appId: "1:365606429754:web:47f4e702b049980714c103",
-            measurementId: "G-NCL27NR50J"
-        };
+  apiKey: "AIzaSyBQ6A_4h7UVjt_pxBZOaMaZZh-b6-edF2o",
+  authDomain: "facturacion-c8682.firebaseapp.com",
+  projectId: "facturacion-c8682", // <--- He cambiado 'ba1f2' por 'c8682'
+  storageBucket: "facturacion-c8682.firebasestorage.app",
+  messagingSenderId: "875153421377",
+  appId: "1:875153421377:web:299738ad96a684797902c0",
+  measurementId: "G-SCQ98GG0BC"
+};
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
