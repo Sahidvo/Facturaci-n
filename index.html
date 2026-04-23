@@ -37,10 +37,10 @@
             body.show-stamp .stamp-img-render { display: block !important; }
         }
         .stamp-img-render { display: none; }
-        .print-paper { max-width: 850px; margin: auto; padding: 40px; background: white; box-shadow: 0 0 15px rgba(0,0,0,0.1); min-height: 297mm; }
+        .print-paper { max-width: 850px; margin: auto; padding: 40px; background: white; box-shadow: 0 0 15px rgba(0,0,0,0.1); min-height: 297mm; display: flex; flex-direction: column; }
         .input-field { width: 100%; border: 1px solid #ddd; padding: 6px; border-radius: 4px; font-size: 0.85rem; margin-top: 4px; outline-color: #3498DB; color: #000 !important; background: #fff !important; }
         label { font-size: 0.75rem; font-weight: bold; color: #555; }
-        .legal-footer-container { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; min-height: 4.5cm; }
+        .legal-footer-container { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; min-height: 4cm; }
         .stamp-img-render { height: 4cm !important; width: 7cm !important; object-fit: contain; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -48,6 +48,7 @@
         .tab-btn.active { border-bottom: 3px solid #2563eb; color: #2563eb; background: #f8fafc; font-weight: 800; }
         .invoice-table th { border-bottom: 2px solid #333; padding: 12px 8px; text-transform: uppercase; font-size: 10px; }
         .invoice-table td { padding: 10px 8px; border-bottom: 1px solid #eee; }
+        .legal-note { font-size: 9px; color: #666; margin-top: auto; padding-top: 20px; border-top: 1px solid #eee; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -163,8 +164,16 @@
                 </div>
             </div>
             <div class="legal-footer-container">
-                <div class="text-[9.5px] text-gray-500 italic"><p class="font-bold text-gray-700 not-italic uppercase">Dra. Laura Ramos Blanco</p><p>Graduada en Podología | Colegiado 1880</p></div>
+                <div class="text-[9.5px] text-gray-500 italic">
+                    <p class="font-bold text-gray-700 not-italic uppercase">Dra. Laura Ramos Blanco</p>
+                    <p>Graduada en Podología</p>
+                    <p>Colegiado No. 1880 - Madrid</p>
+                </div>
                 <img src="" id="imgSelloFirma" alt="Sello" class="stamp-img-render">
+            </div>
+            <div class="legal-note">
+                <p class="italic text-gray-700 mb-1">Nota: Factura exenta de IVA (Art. 20.Uno.3º Ley 37/1992).</p>
+                <p class="text-justify opacity-60 leading-tight">POLÍTICA DE PRIVACIDAD: Los datos de carácter personal que figuran en esta factura son tratados por Laura Ramos Blanco con la finalidad de gestión contable, administrativa y prestación del servicio clínico...</p>
             </div>
         </div>
     </div>
@@ -184,9 +193,7 @@
             const hoy = new Date();
             document.getElementById('repDesde').value = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
             document.getElementById('repHasta').value = hoy.toISOString().split('T')[0];
-            escucharFacturas();
-            escucharClientes();
-            resetForm();
+            escucharFacturas(); escucharClientes(); resetForm();
         });
 
         window.switchTab = function(tab) {
@@ -224,8 +231,7 @@
             const q = query(collection(window.dbFirestore, "facturas"), orderBy("numero", "desc"));
             onSnapshot(q, (snapshot) => {
                 dbFacturas = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                renderHistorial();
-                actualizarSumaReporte();
+                renderHistorial(); actualizarSumaReporte();
                 if(!editDocId) {
                     let maxNum = 153;
                     if(dbFacturas.length > 0) maxNum = Math.max(...dbFacturas.map(f => parseInt(f.numero) || 0));
@@ -233,6 +239,23 @@
                     updateView();
                 }
             });
+        }
+
+        window.renderHistorial = function() {
+            const list = document.getElementById('historialList');
+            if(!list) return;
+            list.innerHTML = dbFacturas.slice(0, 15).map(f => `
+                <div class="p-2 bg-gray-50 border rounded flex justify-between items-center cursor-pointer hover:bg-blue-50 mb-1 border-l-4 border-l-blue-400" onclick="editInvoice('${f.id}')">
+                    <div class="truncate flex flex-col">
+                        <span class="text-[10px] text-gray-500 font-bold">#${f.numero} - ${f.fecha.split('-').reverse().join('/')}</span>
+                        <span class="font-bold text-gray-800 uppercase">${f.nombre}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="font-black text-blue-700">${(f.total || 0).toFixed(2)}€</span>
+                        <button onclick="eliminarFactura(event, '${f.id}')" class="text-red-400 font-bold px-1 hover:text-red-600">X</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         window.saveInvoice = async function() {
@@ -252,15 +275,11 @@
             if(!data.nombre) return alert("Nombre obligatorio");
             btn.disabled = true;
             try {
-                if(editDocId) {
-                    await updateDoc(doc(window.dbFirestore, "facturas", editDocId), data);
-                } else {
-                    await addDoc(collection(window.dbFirestore, "facturas"), data);
-                }
+                if(editDocId) await updateDoc(doc(window.dbFirestore, "facturas", editDocId), data);
+                else await addDoc(collection(window.dbFirestore, "facturas"), data);
                 await setDoc(doc(window.dbFirestore, "clientes", data.nombre), { Nombre: data.nombre, NIF: data.nif, Direccion: data.direccion, CP: data.cp, Provincia: data.provincia });
-                resetForm();
-                alert("Guardado correctamente.");
-            } catch (e) { console.error(e); alert("Error al guardar."); } finally { btn.disabled = false; }
+                resetForm(); alert("Guardado correctamente.");
+            } catch (e) { alert("Error al guardar."); } finally { btn.disabled = false; }
         }
 
         window.editInvoice = function(id) {
@@ -277,20 +296,7 @@
             document.getElementById('inProvincia').value = f.provincia;
             document.getElementById('inNif').value = f.nif;
             window.items = f.items || [];
-            renderItemsInputs();
-            updateView();
-            switchTab('facturacion');
-        }
-
-        window.renderHistorial = function() {
-            const list = document.getElementById('historialList');
-            if(!list) return;
-            list.innerHTML = dbFacturas.slice(0, 15).map(f => `
-                <div class="p-2 bg-gray-50 border rounded flex justify-between items-center cursor-pointer hover:bg-blue-50 mb-1 border-l-4 border-l-blue-400" onclick="editInvoice('${f.id}')">
-                    <div class="truncate"><b>#${f.numero}</b> - ${f.nombre}</div>
-                    <button onclick="eliminarFactura(event, '${f.id}')" class="text-red-400 font-bold px-2">X</button>
-                </div>
-            `).join('');
+            renderItemsInputs(); updateView(); switchTab('facturacion');
         }
 
         window.eliminarFactura = async function(e, id) {
