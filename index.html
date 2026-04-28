@@ -164,10 +164,25 @@
                 <tbody id="outTableBody"></tbody>
             </table>
             <div class="flex justify-end mb-10">
-                <div class="w-[220px] text-[13px] border-t-2 border-gray-800 pt-3 font-bold uppercase text-right">
-                    <div class="flex justify-between items-center"><span class="text-gray-500">TOTAL FACTURA:</span><span id="outTotal" class="text-lg">0,00 EUR</span></div>
-                </div>
-            </div>
+    <div class="w-[240px] text-[12px] border-t-2 border-gray-800 pt-3 font-bold uppercase">
+
+        <div class="flex justify-between mb-1">
+            <span class="text-gray-500">Base imponible</span>
+            <span id="outBase">0,00 EUR</span>
+        </div>
+
+        <div class="flex justify-between mb-2">
+            <span class="text-gray-500">IVA Exento</span>
+            <span>0,00 EUR</span>
+        </div>
+
+        <div class="flex justify-between border-t pt-2 text-[14px] font-black">
+            <span>Importe total</span>
+            <span id="outTotal">0,00 EUR</span>
+        </div>
+
+    </div>
+</div>
             <div class="legal-footer-container">
                 <div class="text-[9.5px] text-gray-500 italic">
                     <p class="font-bold text-gray-700 not-italic uppercase">Dra. Laura Ramos Blanco</p>
@@ -385,6 +400,7 @@
                 return `<tr><td>${item.desc}</td><td class="text-center">${item.cant}</td><td class="text-right">${p.toFixed(2)}€</td><td class="text-right font-bold">${p.toFixed(2)}€</td></tr>`;
             }).join('');
             document.getElementById('outTotal').innerText = total.toFixed(2).replace('.', ',') + " EUR";
+            document.getElementById('outBase').innerText = total.toFixed(2).replace('.', ',') + " EUR";
         }
 
         window.buscarYCompletar = function(nombre) {
