@@ -264,7 +264,7 @@
         window.renderHistorial = function() {
             const list = document.getElementById('historialList');
             if(!list) return;
-            list.innerHTML = dbFacturas.slice(0, 15).map(f => `
+            list.innerHTML = dbFacturas.map(f => `
                 <div class="p-2 bg-gray-50 border rounded flex justify-between items-center cursor-pointer hover:bg-blue-50 mb-1 border-l-4 border-l-blue-400" onclick="editInvoice('${f.id}')">
                     <div class="truncate flex flex-col">
                         <span class="text-[10px] text-gray-500 font-bold">#${f.numero} - ${f.fecha.split('-').reverse().join('/')}</span>
